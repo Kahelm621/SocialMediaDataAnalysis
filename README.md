@@ -2,18 +2,31 @@
 
 ## Overview
 
-This project analyzes simulated social media engagement data to derive insights...
+This project focuses on analyzing social media engagement data to uncover valuable insights related to user behavior and trends.
 
-## Getting Started
+## Objectives
+
+- Identify key metrics of engagement.
+- Analyze data trends.
+- Provide actionable recommendations based on findings.
+
+## Technologies Used
+
+- Python
+- Pandas
+- Matplotlib
+- Seaborn
+
+## Instructions
 
 1. Clone the repository
-2. Install required libraries using pip
+2. Install required libraries
 3. Open `analysis.ipynb` in Jupyter Notebook and run the cells.
 
 ## Findings
 
-- [Brief summary of key findings]
+- [Add key findings here]
 
 ## Future Recommendations
 
-- [Suggestions based on the analysis]
+- [Add suggestions for future analysis or data collection]
