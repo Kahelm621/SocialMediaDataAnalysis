@@ -1,0 +1,7 @@
+plt.figure(figsize=(10, 6))
+sns.histplot(data['engagement'], bins=30, kde=True)
+plt.title('Distribution of Engagement')
+plt.xlabel('Engagement')
+plt.ylabel('Frequency')
+plt.savefig('figures/distribution_of_engagement.png')  # Save the plot
+plt.show()
