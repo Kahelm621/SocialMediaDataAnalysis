@@ -1,0 +1,43 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Load the Twitter data
+df = pd.read_csv('twitter_data.csv')
+
+# Display the first few rows of the dataframe
+print(df.head())
+
+# Data Cleaning
+# Check for missing values
+print(df.isnull().sum())
+
+# Fill missing values or remove them depending on the context
+df.dropna(inplace=True)  # or use df.fillna(0, inplace=True) based on the analysis requirements
+
+# Convert date columns to datetime format if applicable
+df['date'] = pd.to_datetime(df['date'])
+
+# Exploratory Analysis
+# Descriptive statistics
+print(df.describe())
+
+# Example: Find total engagement (likes + retweets + replies)
+df['total_engagement'] = df['likes'] + df['retweets'] + df['replies']
+
+# Trend analysis: Average engagements over time
+engagement_trend = df.groupby(df['date'].dt.to_period("M")).mean()['total_engagement']
+
+# Visualize the engagement trend
+plt.figure(figsize=(12, 6))
+sns.lineplot(x=engagement_trend.index.astype(str), y=engagement_trend.values)
+plt.title('Average Monthly Engagement on Twitter')
+plt.xlabel('Month')
+plt.ylabel('Average Total Engagement')
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
+
+# Additional Analysis: Most engaging tweets
+top_tweets = df.nlargest(10, 'total_engagement')
+print(top_tweets[['tweet_content', 'total_engagement']])
