@@ -1,6 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+from textblob import TextBlob
 
 # Load the Twitter data
 df = pd.read_csv('twitter_data.csv')
@@ -9,29 +10,59 @@ df = pd.read_csv('twitter_data.csv')
 print(df.head())
 
 # Data Cleaning
-# Check for missing values
-print(df.isnull().sum())
+print("Missing values:\n", df.isnull().sum())
+df.dropna(inplace=True)  # Dropping missing values
+df['date'] = pd.to_datetime(df['date'])  # Convert date strings to datetime
 
-# Fill missing values or remove them depending on the context
-df.dropna(inplace=True)  # or use df.fillna(0, inplace=True) based on the analysis requirements
+# Filter tweets related to AI
+ai_tweets = df[df['tweet_content'].str.contains('#AI', case=False, na=False)]
 
-# Convert date columns to datetime format if applicable
-df['date'] = pd.to_datetime(df['date'])
+# Function to calculate sentiment
+def get_sentiment(text):
+    analysis = TextBlob(text)
+    return analysis.sentiment.polarity  # Returns a value between -1 (negative) and 1 (positive)
 
-# Exploratory Analysis
-# Descriptive statistics
-print(df.describe())
+# Apply sentiment analysis to tweet_content
+ai_tweets['sentiment'] = ai_tweets['tweet_content'].apply(get_sentiment)
 
-# Example: Find total engagement (likes + retweets + replies)
-df['total_engagement'] = df['likes'] + df['retweets'] + df['replies']
+# Visualize the sentiment distribution
+plt.figure(figsize=(10, 6))
+sns.histplot(ai_tweets['sentiment'], bins=30, kde=True)
+plt.title('Sentiment Distribution of AI Tweets')
+plt.xlabel('Sentiment Score')
+plt.ylabel('Frequency')
+plt.axvline(0, color='red', linestyle='--')  # Neutral line
+plt.tight_layout()
+plt.show()
 
-# Trend analysis: Average engagements over time
-engagement_trend = df.groupby(df['date'].dt.to_period("M")).mean()['total_engagement']
+# Calculate total engagement (likes + retweets + replies)
+ai_tweets['total_engagement'] = ai_tweets['likes'] + ai_tweets['retweets'] + ai_tweets['replies']
 
-# Visualize the engagement trend
+# Create sentiment categories
+ai_tweets['sentiment_category'] = pd.cut(ai_tweets['sentiment'], bins=[-1, -0.1, 0.1, 1], labels=['Negative', 'Neutral', 'Positive'])
+
+# Calculate average engagement by sentiment category
+average_engagement_by_sentiment = ai_tweets.groupby('sentiment_category')['total_engagement'].mean()
+
+# Visualize average engagement by sentiment category
+plt.figure(figsize=(8, 5))
+average_engagement_by_sentiment.plot(kind='bar')
+plt.title('Average Engagement by Sentiment Category for AI Tweets')
+plt.xlabel('Sentiment Category')
+plt.ylabel('Average Total Engagement')
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
+
+# Trend Analysis
+# Average monthly engagement over time
+ai_tweets['month'] = ai_tweets['date'].dt.to_period('M')
+monthly_engagement = ai_tweets.groupby('month').mean()['total_engagement']
+
+# Visualize the monthly engagement trend
 plt.figure(figsize=(12, 6))
-sns.lineplot(x=engagement_trend.index.astype(str), y=engagement_trend.values)
-plt.title('Average Monthly Engagement on Twitter')
+sns.lineplot(x=monthly_engagement.index.astype(str), y=monthly_engagement.values)
+plt.title('Average Monthly Engagement on AI Tweets')
 plt.xlabel('Month')
 plt.ylabel('Average Total Engagement')
 plt.xticks(rotation=45)
@@ -39,5 +70,5 @@ plt.tight_layout()
 plt.show()
 
 # Additional Analysis: Most engaging tweets
-top_tweets = df.nlargest(10, 'total_engagement')
+top_tweets = ai_tweets.nlargest(10, 'total_engagement')
 print(top_tweets[['tweet_content', 'total_engagement']])
