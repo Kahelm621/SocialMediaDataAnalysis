@@ -1,5 +1,18 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import os
+
+# Example DataFrame creation (Replace this with your actual DataFrame)
+# ai_tweets = pd.read_csv('twitter_data.csv')  # Assuming ai_tweets has been defined
+
+# Create figures directory if it doesn't exist
+if not os.path.exists('figures'):
+    os.makedirs('figures')
+
+# Plotting the distribution of engagement
 plt.figure(figsize=(10, 6))
-sns.histplot(data['engagement'], bins=30, kde=True)
+sns.histplot(ai_tweets['total_engagement'], bins=30, kde=True)  # Ensure the correct DataFrame is referenced here
 plt.title('Distribution of Engagement')
 plt.xlabel('Engagement')
 plt.ylabel('Frequency')
