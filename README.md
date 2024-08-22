@@ -23,10 +23,4 @@ This project focuses on analyzing social media engagement data to uncover valuab
 2. Install required libraries
 3. Open `analysis.ipynb` in Jupyter Notebook and run the cells.
 
-## Findings
 
-- [Add key findings here]
-
-## Future Recommendations
-
-- [Add suggestions for future analysis or data collection]
