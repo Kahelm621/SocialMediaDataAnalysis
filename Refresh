@@ -1,0 +1,1 @@
+gh auth refresh -h github.com -s workflow
