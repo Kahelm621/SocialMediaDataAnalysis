@@ -24,3 +24,7 @@ This project focuses on analyzing social media engagement data to uncover valuab
 3. Open `analysis.ipynb` in Jupyter Notebook and run the cells.
 
 
+
+## License
+
+MIT. See [LICENSE](LICENSE).
