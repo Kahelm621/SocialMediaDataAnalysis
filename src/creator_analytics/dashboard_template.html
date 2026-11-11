@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Creator analytics</title>
+  <link rel="icon" href="data:,">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,560;9..144,650&family=Outfit:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+  <style>
+    :root {
+      --paper: #f3eee6;
+      --card: #fffdf9;
+      --ink: #241c16;
+      --muted: #6f645b;
+      --line: #e6d9c8;
+      --accent: #b85032;
+      --good: #216348;
+      --bad: #9a3412;
+      --steady: #6f645b;
+      --shadow: 0 12px 32px rgba(70, 46, 22, 0.06);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background:
+        radial-gradient(1200px 400px at 10% -10%, #f8e7d4 0%, transparent 55%),
+        var(--paper);
+      color: var(--ink);
+      font-family: "Outfit", "Segoe UI", sans-serif;
+      line-height: 1.5;
+    }
+    header, main { width: min(1120px, calc(100% - 32px)); margin: 0 auto; }
+    header { padding: 36px 0 8px; }
+    .kicker {
+      margin: 0 0 8px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--accent);
+    }
+    h1, h2, h3 { font-family: "Fraunces", Georgia, serif; font-weight: 560; letter-spacing: -0.02em; }
+    h1 { font-size: clamp(34px, 5vw, 52px); line-height: 1.05; margin: 0 0 12px; }
+    h2 { font-size: 30px; margin: 0 0 6px; }
+    h3 { font-size: 20px; margin: 0 0 8px; }
+    .lede { max-width: 68ch; color: var(--muted); margin: 0; font-size: 18px; }
+    .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 22px 0; }
+    .steps[hidden], #mine[hidden], #explore[hidden] { display: none !important; }
+    .steps div { background: var(--card); border-radius: 14px; padding: 14px 16px; box-shadow: var(--shadow); }
+    .steps strong { display: block; font-size: 13px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--accent); }
+    .banner {
+      border-radius: 14px;
+      padding: 14px 16px;
+      margin: 8px 0 18px;
+      background: #fff4d6;
+      border: 1px dashed #c48a2a;
+    }
+    .banner.live { background: #e7f4ec; border-style: solid; border-color: #8fbfa4; }
+    .banner strong { letter-spacing: 0.08em; margin-right: 6px; }
+    .filters {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 14px;
+      align-items: end;
+      background: rgba(243, 238, 230, 0.92);
+      backdrop-filter: blur(8px);
+      padding: 12px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; color: var(--muted); }
+    label.check { flex-direction: row; align-items: center; gap: 8px; padding-bottom: 8px; }
+    select, input[type="date"], button {
+      font: inherit;
+      color: var(--ink);
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 8px 10px;
+    }
+    button { cursor: pointer; }
+    button:hover { border-color: var(--accent); }
+    section { padding: 28px 0 8px; }
+    .section-note { color: var(--muted); margin: 0 0 14px; max-width: 75ch; }
+    .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+    .card, .panel, .rec {
+      background: var(--card);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+    }
+    .card { padding: 16px; }
+    .card .label { color: var(--muted); font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+    .card .value { font-family: "Fraunces", Georgia, serif; font-size: 30px; margin-top: 4px; }
+    .card .hint { color: var(--muted); font-size: 13px; margin-top: 4px; }
+    .card .follower-line { color: var(--ink); font-size: 15px; margin-top: 8px; }
+    .panel { padding: 8px 8px 4px; margin: 12px 0; }
+    .chart-head { display: flex; justify-content: space-between; gap: 12px; align-items: end; margin-top: 18px; }
+    .chart { min-height: 180px; }
+    .empty { color: var(--muted); padding: 24px 12px; }
+    .table-wrap { overflow-x: auto; margin-top: 8px; }
+    table { width: 100%; border-collapse: collapse; background: var(--card); border-radius: 16px; }
+    caption { text-align: left; font-weight: 600; padding: 12px 8px 4px; }
+    th, td { padding: 10px 8px; text-align: left; vertical-align: top; font-size: 14px; }
+    th { color: var(--muted); font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase; }
+    td { border-top: 1px solid var(--line); }
+    .pill { display: inline-block; border-radius: 999px; padding: 2px 8px; font-size: 12px; background: #f3e6da; }
+    .pill.youtube { background: #f8d6d2; }
+    .pill.x { background: #eceae6; }
+    .pill.tiktok { background: #d7efef; }
+    .split { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 14px; }
+    .rising { display: flex; flex-direction: column; gap: 8px; }
+    .change { padding: 10px 12px; border-radius: 12px; background: #faf7f2; border: 1px solid var(--line); }
+    .change.rising strong { color: var(--good); }
+    .change.falling strong { color: var(--bad); }
+    .change.steady strong, .change.new strong, .change.not_enough_history strong { color: var(--steady); }
+    .compare { display: flex; flex-direction: column; gap: 14px; }
+    .compare-row span { display: block; font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+    .bars { display: grid; gap: 4px; }
+    .bar-line { display: grid; grid-template-columns: 52px 1fr auto; gap: 8px; align-items: center; font-size: 13px; }
+    .bar { height: 10px; border-radius: 999px; background: var(--line); }
+    .bar i { display: block; height: 10px; border-radius: 999px; background: var(--accent); }
+    .bar.top i { background: #3d5a80; }
+    .recs { display: grid; gap: 12px; }
+    .rec { padding: 16px 18px 16px 18px; border-left: 4px solid var(--accent); }
+    .rec p { margin: 6px 0; }
+    .try { margin: 0; color: var(--ink); }
+    footer { width: min(1120px, calc(100% - 32px)); margin: 20px auto 40px; color: var(--muted); font-size: 14px; }
+    footer li { margin: 6px 0; }
+    details { margin-top: 16px; }
+    a { color: var(--accent); }
+    .views { display: flex; gap: 8px; margin: 8px 0 0; }
+    .views button.on { background: var(--ink); color: #fffdf9; border-color: var(--ink); }
+    #audit { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    @media (max-width: 800px) {
+      .steps, .cards, .split, #audit { grid-template-columns: 1fr; }
+      .filters { position: static; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <p class="kicker">Creator analytics</p>
+    <h1>How the posts are doing, and what to try next</h1>
+    <p class="lede">Your channels are one section. YouTube as a whole is the other: trending charts, keyword estimates, and videos that are far ahead of their own channel. Every score says how it was calculated.</p>
+    <div class="views">
+      <button type="button" id="view-mine" class="on">My channels</button>
+      <button type="button" id="view-explore">YouTube explorer</button>
+    </div>
+    <div class="steps">
+      <div><strong>1. Performance</strong> Your own videos and posts over time.</div>
+      <div><strong>2. Trends</strong> Top titles and hashtag attention for the phrases you track.</div>
+      <div><strong>3. What to do better</strong> Plain comparisons: length, timing, and rising phrases.</div>
+    </div>
+    <div id="banner" class="banner" role="status"></div>
+  </header>
+  <main>
+    <div id="mine">
+    <form class="filters" id="filters">
+      <label>Platform
+        <select id="platform"></select>
+      </label>
+      <label>Account
+        <select id="account"></select>
+      </label>
+      <label>Keyword
+        <select id="keyword"></select>
+      </label>
+      <label>From
+        <input type="date" id="from">
+      </label>
+      <label>To
+        <input type="date" id="to">
+      </label>
+      <button type="button" id="reset">Reset</button>
+      <label class="check">
+        <input type="checkbox" id="title-only">
+        Only posts whose text includes the keyword
+      </label>
+    </form>
+
+    <section>
+      <div class="cards" id="cards"></div>
+    </section>
+
+    <section>
+      <h2>Performance</h2>
+      <p class="section-note">Followers are the account. The other chart is one line per post. Engagement rate is (likes + comments + shares) / views. Views per day is the change between the last two snapshots in view, divided by the days between them. The first snapshot has no pace yet.</p>
+      <div class="panel"><div id="followers" class="chart"></div></div>
+      <div class="chart-head">
+        <h3>Each post over time</h3>
+        <label>Metric
+          <select id="metric">
+            <option value="views">Views</option>
+            <option value="likes">Likes</option>
+            <option value="comments">Comments</option>
+            <option value="shares">Shares</option>
+            <option value="engagement_rate">Engagement rate</option>
+            <option value="views_per_day">Views per day</option>
+          </select>
+        </label>
+      </div>
+      <div class="panel"><div id="posts-chart" class="chart"></div></div>
+      <p id="posts-note" class="section-note"></p>
+      <div class="table-wrap">
+        <table>
+          <caption>Latest snapshot for each post in this filter</caption>
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Platform</th>
+              <th>Account</th>
+              <th>Published</th>
+              <th>Views</th>
+              <th>Likes</th>
+              <th>Comments</th>
+              <th>Shares</th>
+              <th>Engagement</th>
+              <th>Views/day</th>
+            </tr>
+          </thead>
+          <tbody id="posts-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section>
+      <h2>Trends and keywords</h2>
+      <p class="section-note" id="trend-note"></p>
+      <div class="split">
+        <div class="panel"><div id="keyword-chart" class="chart"></div></div>
+        <div>
+          <h3>Rising and falling</h3>
+          <p class="section-note">Latest snapshot versus about a week earlier, when that history exists. A shorter history uses the previous snapshot. The date filter does not change this list.</p>
+          <div id="rising" class="rising"></div>
+        </div>
+      </div>
+      <h3>Top titles for the keyword</h3>
+      <div id="examples"></div>
+      <h3>Title patterns</h3>
+      <p class="section-note">Your YouTube and TikTok titles compared with top videos for the keywords on this account. X posts are captions, so they are left out of the length comparison. This uses the full saved history, not the date filter.</p>
+      <div id="patterns" class="panel compare"></div>
+    </section>
+
+    <section>
+      <h2>What to do better</h2>
+      <p class="section-note">Each card says which numbers it used. They are rules of thumb from your snapshots, not a promise that views will go up. The date filter does not change these cards. Pick an account to see that account's version.</p>
+      <div id="recs" class="recs"></div>
+      <p id="private-metrics" class="section-note"></p>
+    </section>
+
+    <section>
+      <h2>Video SEO</h2>
+      <p class="section-note">A public checklist for your latest YouTube videos: title, description, tags, chapters, and hashtags. The thumbnail check only knows that an image exists. It cannot tell a custom thumbnail from an automatic one. Fixes are written from the checks that missed.</p>
+      <div id="seo" class="recs"></div>
+    </section>
+
+    <section>
+      <h2>Channel audit</h2>
+      <p class="section-note">A snapshot of each of your YouTube channels: subscribers, how often you upload, the median SEO score, and the check you miss most.</p>
+      <div id="audit"></div>
+    </section>
+
+    <section>
+      <h2>Competitors</h2>
+      <p class="section-note">Channels you list under competitors in config/tracked.yaml. The demo uses sample channels so this section is not empty. Live collection skips a competitor until you set enabled: true and a handle or channel id.</p>
+      <div class="panel"><div id="competitor-chart" class="chart"></div></div>
+      <div id="competitors"></div>
+    </section>
+
+    <section>
+      <h2>Content ideas</h2>
+      <p class="section-note">Rule-based ideas from rising watchlist phrases, outlier videos, and wording on the trending chart. Each card cites the count it used.</p>
+      <div id="ideas" class="recs"></div>
+    </section>
+    </div>
+
+    <div id="explore" hidden>
+      <form class="filters">
+        <label>Region
+          <select id="explore-region"></select>
+        </label>
+        <label>Category
+          <select id="explore-category"></select>
+        </label>
+      </form>
+      <section>
+        <h2>Trending and most popular</h2>
+        <p class="section-note">videos.list chart=mostPopular. One row per video on the latest snapshot. Streak is how many saved charts in a row this video stayed on, counting gaps up to 36 hours as the same run.</p>
+        <p id="pace-note" class="section-note"></p>
+        <div class="table-wrap">
+          <table>
+            <caption>Latest most-popular chart for this region and category</caption>
+            <thead>
+              <tr>
+                <th>Title</th>
+                <th>Channel</th>
+                <th>Views</th>
+                <th>Lifetime pace / hour</th>
+                <th>Snapshot pace / hour</th>
+                <th>Length</th>
+                <th>Duration</th>
+                <th>Streak</th>
+                <th>Tags</th>
+              </tr>
+            </thead>
+            <tbody id="trending-body"></tbody>
+          </table>
+        </div>
+      </section>
+      <section>
+        <h2>Title patterns and Shorts</h2>
+        <p class="section-note">Share of titles on this chart with a number, mostly-capital letters, an emoji, or a question mark. Mostly-caps means at least 60% of the letters are uppercase.</p>
+        <div class="panel"><div id="pattern-chart" class="chart"></div></div>
+        <p id="shorts-note" class="section-note"></p>
+        <div class="panel"><div id="shorts-chart" class="chart"></div></div>
+      </section>
+      <section>
+        <h2>Category board</h2>
+        <p class="section-note">Words and two-word phrases taken from trending titles and tags. Rising compares this snapshot with about a week earlier. A channel's appearances are how many of its videos are on this chart right now.</p>
+        <div class="split">
+          <div>
+            <h3>Rising wording</h3>
+            <div id="topics" class="rising"></div>
+          </div>
+          <div>
+            <h3>Channels on this chart</h3>
+            <div id="top-channels" class="rising"></div>
+          </div>
+        </div>
+      </section>
+      <section>
+        <h2>Keyword explorer</h2>
+        <p class="section-note">The watchlist in config/tracked.yaml is collected on a quota-safe schedule. For any other phrase, run <code>python scripts/research_keyword.py "your phrase"</code>. That spends about 102 YouTube units and does not write into the repo unless you pass <code>--save</code>.</p>
+        <div class="panel"><div id="opportunity-chart" class="chart"></div></div>
+        <p id="opportunity-note" class="section-note"></p>
+        <div class="table-wrap">
+          <table>
+            <caption>Latest estimate for each watchlist phrase</caption>
+            <thead>
+              <tr>
+                <th>Keyword</th>
+                <th>Opportunity</th>
+                <th>Demand</th>
+                <th>Competition</th>
+                <th>Median views</th>
+                <th>Median subs</th>
+                <th>Suggestions</th>
+              </tr>
+            </thead>
+            <tbody id="research-body"></tbody>
+          </table>
+        </div>
+      </section>
+      <section>
+        <h2>Outliers</h2>
+        <p class="section-note">A video is listed when its views are at least 3× the median of that channel's videos in the latest snapshot. The pool is your videos, enabled competitors, and a small sample of channels that were on the trending chart. It is not every video on YouTube.</p>
+        <div id="outliers" class="rising"></div>
+      </section>
+      <section id="quota"></section>
+    </div>
+  </main>
+  <footer>
+    <h2>Where the numbers came from</h2>
+    <ul id="sources"></ul>
+    <details>
+      <summary>What the words mean</summary>
+      <p><strong>Engagement rate</strong> is likes plus comments plus shares, divided by views. If a platform does not send shares, those are left out. YouTube's public API does not include shares. On X, the "views" number is impressions.</p>
+      <p><strong>Views per day</strong> is how many views you gained between the two newest snapshots, divided by the days between those snapshots.</p>
+      <p><strong>YouTube attention</strong> for a keyword is the combined views of the top search results, not an exact count of every video with that phrase. The opportunity score uses that median plus channel size. It is an estimate, not search volume.</p>
+      <p><strong>Lifetime pace</strong> is views divided by hours since publish. <strong>Snapshot pace</strong> is the change between the last two saves. Neither is a live views-per-hour feed.</p>
+      <p><strong>Trending</strong> is the official mostPopular chart for a region and category. How long a video stays is how many of your saved snapshots still include it.</p>
+      <p><strong>X hashtag volume</strong> is the recent post count when the counts endpoint allows it. If X refuses, the collector saves a small recent sample and labels it that way.</p>
+      <p><strong>TikTok</strong> uses the official Display API (your approved account) and Research API (hashtags, after approval). Nothing is scraped.</p>
+      <p>Hours use the timezone in <code>config/tracked.yaml</code>. It is UTC until you change it.</p>
+    </details>
+  </footer>
+  <script src="explore.js"></script>
+  <script>
+    const DATA = /*__DATA__*/;
+    window.DATA = DATA;
+
+    const state = {
+      platform: "all",
+      account: "all",
+      keyword: "all",
+      from: "",
+      to: "",
+      metric: "views",
+      titleOnly: false,
+    };
+
+    const layout = {
+      paper_bgcolor: "rgba(0,0,0,0)",
+      plot_bgcolor: "rgba(0,0,0,0)",
+      font: { family: "Outfit, Segoe UI, sans-serif", color: "#241c16", size: 12 },
+      margin: { t: 24, r: 16, b: 48, l: 56 },
+      legend: { orientation: "h", y: -0.25 },
+      xaxis: { gridcolor: "#eadfce", title: "", tickformat: "%b %d" },
+      yaxis: { gridcolor: "#eadfce" },
+    };
+
+    function el(tag, text, className) {
+      const node = document.createElement(tag);
+      if (text != null) node.textContent = text;
+      if (className) node.className = className;
+      return node;
+    }
+
+    function platformName(platform) {
+      if (platform === "youtube") return "YouTube";
+      if (platform === "x") return "X";
+      if (platform === "tiktok") return "TikTok";
+      return platform || "";
+    }
+
+    function compact(value) {
+      if (value == null || Number.isNaN(value)) return "—";
+      return new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 1 }).format(value);
+    }
+
+    function percent(value) {
+      if (value == null || Number.isNaN(value)) return "—";
+      return (value * 100).toFixed(1) + "%";
+    }
+
+    function formatWhen(iso) {
+      if (!iso) return "—";
+      try {
+        return new Intl.DateTimeFormat("en", {
+          timeZone: DATA.timezone || "UTC",
+          month: "short",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+          timeZoneName: "short",
+        }).format(new Date(iso));
+      } catch (error) {
+        return iso;
+      }
+    }
+
+    function inRange(iso) {
+      if (!iso) return false;
+      const day = iso.slice(0, 10);
+      if (state.from && day < state.from) return false;
+      if (state.to && day > state.to) return false;
+      return true;
+    }
+
+    function selectedAccount() {
+      if (state.account === "all") return null;
+      const splitAt = state.account.indexOf("::");
+      return { platform: state.account.slice(0, splitAt), name: state.account.slice(splitAt + 2) };
+    }
+
+    function accountKeywords() {
+      const selected = selectedAccount();
+      if (!selected) return null;
+      const found = DATA.accounts.find(function (account) {
+        return account.platform === selected.platform && account.account_name === selected.name;
+      });
+      return found ? found.keywords : null;
+    }
+
+    function keywordAllowed(keyword) {
+      if (state.keyword !== "all" && keyword !== state.keyword) return false;
+      const allowed = accountKeywords();
+      if (allowed && allowed.indexOf(keyword) === -1) return false;
+      return true;
+    }
+
+    function matchesAccount(row) {
+      if (state.platform !== "all" && row.platform !== state.platform) return false;
+      const selected = selectedAccount();
+      if (selected && (row.platform !== selected.platform || row.account_name !== selected.name)) return false;
+      return true;
+    }
+
+    function visiblePosts() {
+      return DATA.posts_over_time.filter(function (row) {
+        if (!inRange(row.collected_at) || !matchesAccount(row)) return false;
+        if (state.titleOnly && state.keyword !== "all") {
+          if ((row.title || "").toLowerCase().indexOf(state.keyword.toLowerCase()) === -1) return false;
+        }
+        return true;
+      });
+    }
+
+    function latestPerPost(rows) {
+      const map = new Map();
+      rows.forEach(function (row) {
+        const key = row.platform + "::" + row.post_id;
+        const prev = map.get(key);
+        if (!prev || row.collected_at > prev.collected_at) map.set(key, row);
+      });
+      return Array.from(map.values());
+    }
+
+    function fillBanner() {
+      const banner = document.getElementById("banner");
+      banner.className = DATA.is_demo ? "banner" : "banner live";
+      banner.replaceChildren();
+      const label = el("strong", DATA.is_demo ? "DEMO DATA" : "LIVE DATA");
+      const text = DATA.is_demo
+        ? DATA.demo_notice
+        : "Numbers below come from saved snapshots. Sample data is not mixed in.";
+      banner.append(label, document.createTextNode(" " + text));
+      document.title = DATA.is_demo ? "Creator analytics (demo data)" : "Creator analytics";
+    }
+
+    function fillFilters() {
+      const platform = document.getElementById("platform");
+      const account = document.getElementById("account");
+      const keyword = document.getElementById("keyword");
+      platform.replaceChildren(new Option("All platforms", "all"));
+      ["youtube", "x", "tiktok"].forEach(function (name) {
+        platform.append(new Option(platformName(name), name));
+      });
+      keyword.replaceChildren(new Option("All keywords", "all"));
+      DATA.keywords.forEach(function (phrase) {
+        keyword.append(new Option(phrase, phrase));
+      });
+      const days = DATA.posts_over_time.map(function (row) { return row.collected_at.slice(0, 10); }).sort();
+      const from = document.getElementById("from");
+      const to = document.getElementById("to");
+      if (days.length) {
+        from.min = to.min = days[0];
+        from.max = to.max = days[days.length - 1];
+        from.value = days[0];
+        to.value = days[days.length - 1];
+        state.from = days[0];
+        state.to = days[days.length - 1];
+      }
+      rebuildAccounts();
+    }
+
+    function rebuildAccounts() {
+      const account = document.getElementById("account");
+      const current = state.account;
+      account.replaceChildren(new Option("All accounts", "all"));
+      DATA.accounts.filter(function (item) {
+        return state.platform === "all" || item.platform === state.platform;
+      }).forEach(function (item) {
+        const value = item.platform + "::" + item.account_name;
+        account.append(new Option(platformName(item.platform) + " · " + item.account_name, value));
+      });
+      const values = Array.from(account.options).map(function (option) { return option.value; });
+      account.value = values.indexOf(current) === -1 ? "all" : current;
+      state.account = account.value;
+    }
+
+    function drawChart(div, traces, yTitle) {
+      if (typeof Plotly !== "undefined") Plotly.purge(div);
+      div.replaceChildren();
+      if (!traces.length) {
+        div.append(el("p", "Nothing in this filter yet.", "empty"));
+        return;
+      }
+      if (typeof Plotly === "undefined") {
+        div.textContent = "Charts did not load. Check your connection and refresh. The tables below still work.";
+        return;
+      }
+      const next = Object.assign({}, layout, {
+        yaxis: Object.assign({}, layout.yaxis, { title: yTitle }),
+      });
+      Plotly.react(div, traces, next, { responsive: true, displayModeBar: false });
+    }
+
+    function renderCards(posts) {
+      const latest = latestPerPost(posts);
+      const holder = document.getElementById("cards");
+      holder.replaceChildren();
+      const accounts = DATA.accounts_over_time.filter(function (row) {
+        return inRange(row.collected_at) && matchesAccount(row);
+      });
+      const followerLatest = latestPerPost(accounts.map(function (row) {
+        return Object.assign({}, row, { post_id: row.account_name });
+      }));
+      const followerCard = el("article", null, "card");
+      followerCard.append(el("div", "Followers / subscribers", "label"));
+      if (!followerLatest.length) {
+        followerCard.append(el("div", "—", "value"));
+      } else if (followerLatest.length === 1) {
+        followerCard.append(el("div", compact(followerLatest[0].followers), "value"));
+        followerCard.append(el("div", followerLatest[0].account_name, "hint"));
+      } else {
+        followerLatest.forEach(function (row) {
+          followerCard.append(el("div", compact(row.followers) + " · " + row.account_name, "follower-line"));
+        });
+      }
+      const labels = latest.map(function (row) { return row.views_label; });
+      const mixed = labels.some(function (label) { return label === "impressions"; }) && labels.some(function (label) { return label !== "impressions"; });
+      const viewSum = latest.reduce(function (sum, row) { return sum + (row.views || 0); }, 0);
+      const rates = latest.map(function (row) { return row.engagement_rate; }).filter(function (value) { return value != null; });
+      const paces = latest.map(function (row) { return row.views_per_day; }).filter(function (value) { return value != null; });
+      function median(values) {
+        if (!values.length) return null;
+        const sorted = values.slice().sort(function (a, b) { return a - b; });
+        const mid = Math.floor(sorted.length / 2);
+        if (sorted.length % 2) return sorted[mid];
+        return (sorted[mid - 1] + sorted[mid]) / 2;
+      }
+      const cards = [
+        followerCard,
+        (function () {
+          const card = el("article", null, "card");
+          card.append(el("div", mixed ? "Views + impressions" : "Views on these posts", "label"));
+          card.append(el("div", compact(viewSum), "value"));
+          card.append(el("div", mixed ? "X impressions are included in this total." : "Sum of the latest snapshot for each post.", "hint"));
+          return card;
+        })(),
+        (function () {
+          const card = el("article", null, "card");
+          card.append(el("div", "Median engagement", "label"));
+          card.append(el("div", percent(median(rates)), "value"));
+          card.append(el("div", rates.length + " posts with a rate", "hint"));
+          return card;
+        })(),
+        (function () {
+          const card = el("article", null, "card");
+          card.append(el("div", "Median views/day", "label"));
+          card.append(el("div", compact(median(paces)), "value"));
+          card.append(el("div", "Between the last two snapshots.", "hint"));
+          return card;
+        })(),
+      ];
+      cards.forEach(function (card) { holder.append(card); });
+    }
+
+    function renderFollowers() {
+      const rows = DATA.accounts_over_time.filter(function (row) {
+        return inRange(row.collected_at) && matchesAccount(row);
+      });
+      const groups = new Map();
+      rows.forEach(function (row) {
+        const key = row.platform + "::" + row.account_name;
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key).push(row);
+      });
+      const traces = [];
+      let index = 0;
+      groups.forEach(function (points, key) {
+        points.sort(function (a, b) { return a.collected_at < b.collected_at ? -1 : 1; });
+        traces.push({
+          type: "scatter",
+          mode: "lines+markers",
+          name: platformName(points[0].platform) + " · " + points[0].account_name,
+          x: points.map(function (point) { return point.collected_at; }),
+          y: points.map(function (point) { return point.followers; }),
+          line: { color: ["#b85032", "#216348", "#3d5a80", "#8a5a9b", "#9a6b12", "#0f6f73"][index % 6], width: 2 },
+        });
+        index += 1;
+      });
+      drawChart(document.getElementById("followers"), traces, "Followers");
+    }
+
+    function metricValue(row, metric) {
+      if (metric === "engagement_rate") {
+        return row.engagement_rate == null ? null : row.engagement_rate * 100;
+      }
+      const value = row[metric];
+      return value == null ? null : value;
+    }
+
+    function renderPosts(posts) {
+      const latest = latestPerPost(posts).sort(function (a, b) { return (b.views || 0) - (a.views || 0); });
+      const keep = new Set(latest.slice(0, 8).map(function (row) { return row.platform + "::" + row.post_id; }));
+      const groups = new Map();
+      posts.forEach(function (row) {
+        const key = row.platform + "::" + row.post_id;
+        if (!keep.has(key)) return;
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key).push(row);
+      });
+      const traces = [];
+      let index = 0;
+      let anyValue = false;
+      groups.forEach(function (points) {
+        points.sort(function (a, b) { return a.collected_at < b.collected_at ? -1 : 1; });
+        const y = points.map(function (point) { return metricValue(point, state.metric); });
+        if (y.some(function (value) { return value != null; })) anyValue = true;
+        const title = points[0].title || points[0].post_id;
+        traces.push({
+          type: "scatter",
+          mode: "lines+markers",
+          name: title.length > 42 ? title.slice(0, 42) + "…" : title,
+          x: points.map(function (point) { return point.collected_at; }),
+          y: y,
+          customdata: points.map(function () { return title; }),
+          hovertemplate: "%{customdata}<br>%{x}<br>%{y}<extra></extra>",
+          line: { color: ["#b85032", "#216348", "#3d5a80", "#8a5a9b", "#9a6b12", "#0f6f73", "#9a3412", "#3d6b6b"][index % 8], width: 2 },
+        });
+        index += 1;
+      });
+      const yTitle = {
+        views: "Views",
+        likes: "Likes",
+        comments: "Comments",
+        shares: "Shares",
+        engagement_rate: "Engagement rate (%)",
+        views_per_day: "Views per day",
+      }[state.metric];
+      drawChart(document.getElementById("posts-chart"), anyValue ? traces : [], yTitle);
+      const note = document.getElementById("posts-note");
+      const hidden = latest.length - keep.size;
+      const bits = [];
+      if (hidden > 0) bits.push("Showing 8 posts with the most views. Pick one account to narrow the chart. " + hidden + " more are in the table.");
+      if (state.metric === "shares") bits.push("YouTube's public API does not include shares, so those lines stay empty.");
+      if (state.metric === "views" && posts.some(function (row) { return row.views_label === "impressions"; })) {
+        bits.push("On X, this metric is impressions.");
+      }
+      if (state.metric === "views_per_day") bits.push("The first saved day has no views/day, because there is no earlier snapshot to subtract.");
+      note.textContent = bits.join(" ");
+
+      const body = document.getElementById("posts-body");
+      body.replaceChildren();
+      latest.forEach(function (row) {
+        const tr = document.createElement("tr");
+        const titleCell = document.createElement("td");
+        if (!DATA.is_demo && row.url) {
+          const link = el("a", row.title || row.post_id);
+          link.href = row.url;
+          link.target = "_blank";
+          link.rel = "noopener";
+          titleCell.append(link);
+        } else {
+          titleCell.textContent = row.title || row.post_id;
+        }
+        tr.append(titleCell);
+        const pill = el("span", platformName(row.platform), "pill " + row.platform);
+        const platformCell = document.createElement("td");
+        platformCell.append(pill);
+        tr.append(platformCell);
+        [row.account_name, formatWhen(row.published_at), compact(row.views), compact(row.likes), compact(row.comments), compact(row.shares), percent(row.engagement_rate), compact(row.views_per_day)].forEach(function (value) {
+          tr.append(el("td", value));
+        });
+        body.append(tr);
+      });
+    }
+
+    function keywordPlatform() {
+      return state.platform === "all" ? "youtube" : state.platform;
+    }
+
+    function renderKeywords() {
+      const platform = keywordPlatform();
+      const rows = DATA.keywords_over_time.filter(function (row) {
+        return row.platform === platform && inRange(row.collected_at) && keywordAllowed(row.keyword);
+      });
+      const groups = new Map();
+      rows.forEach(function (row) {
+        if (!groups.has(row.keyword)) groups.set(row.keyword, []);
+        groups.get(row.keyword).push(row);
+      });
+      const traces = [];
+      let index = 0;
+      let note = "";
+      groups.forEach(function (points, keyword) {
+        points.sort(function (a, b) { return a.collected_at < b.collected_at ? -1 : 1; });
+        note = points[points.length - 1].attention_note || note;
+        traces.push({
+          type: "scatter",
+          mode: "lines+markers",
+          name: keyword,
+          x: points.map(function (point) { return point.collected_at; }),
+          y: points.map(function (point) { return point.attention; }),
+          line: { color: ["#b85032", "#216348", "#3d5a80", "#8a5a9b", "#9a6b12"][index % 5], width: 2 },
+        });
+        index += 1;
+      });
+      const kind = platform === "youtube" ? "Top-result views" : platform === "x" ? "Recent post count" : "Research sample views";
+      drawChart(document.getElementById("keyword-chart"), traces, kind);
+      const extra = state.platform === "all"
+        ? " Showing YouTube so different kinds of counts are not drawn on one axis. Pick X or TikTok to switch."
+        : "";
+      document.getElementById("trend-note").textContent = (note || "Keyword attention over snapshots.") + extra;
+    }
+
+    function renderRising() {
+      const holder = document.getElementById("rising");
+      holder.replaceChildren();
+      const rows = DATA.keyword_changes.filter(function (row) {
+        if (state.platform !== "all" && row.platform !== state.platform) return false;
+        return keywordAllowed(row.keyword);
+      });
+      if (!rows.length) {
+        holder.append(el("p", "No keyword history in this filter.", "empty"));
+        return;
+      }
+      rows.forEach(function (row) {
+        const card = el("div", null, "change " + row.label);
+        const pct = row.pct_change == null ? row.label.replaceAll("_", " ") : (row.pct_change > 0 ? "+" : "") + row.pct_change.toFixed(1) + "%";
+        card.append(el("strong", platformName(row.platform) + " · " + row.keyword + " · " + pct));
+        const previous = row.previous == null ? "—" : compact(row.previous);
+        const current = row.current == null ? "—" : compact(row.current);
+        card.append(el("div", previous + " → " + current));
+        holder.append(card);
+      });
+    }
+
+    function renderExamples() {
+      const holder = document.getElementById("examples");
+      holder.replaceChildren();
+      const platform = keywordPlatform();
+      const rows = DATA.latest_examples.filter(function (row) {
+        return row.platform === platform && keywordAllowed(row.keyword);
+      });
+      if (!rows.length) {
+        holder.append(el("p", "No keyword snapshot for this filter.", "empty"));
+        return;
+      }
+      rows.forEach(function (row) {
+        const block = el("div", null, "panel");
+        block.append(el("h3", row.keyword));
+        if (!row.examples.length) {
+          block.append(el("p", row.attention_note || "No titles saved for this keyword yet.", "section-note"));
+        } else {
+          const list = document.createElement("ol");
+          row.examples.forEach(function (example) {
+            const item = document.createElement("li");
+            item.textContent = (example.title || "Untitled") + (example.author ? " — " + example.author : "") + (example.views != null ? " · " + compact(example.views) : "");
+            list.append(item);
+          });
+          block.append(list);
+          if (DATA.is_demo) block.append(el("p", "Sample titles, not a live search.", "section-note"));
+        }
+        holder.append(block);
+      });
+    }
+
+    function renderPatterns() {
+      const holder = document.getElementById("patterns");
+      const key = state.account === "all" ? "all" : state.account;
+      const block = DATA.title_patterns[key] || DATA.title_patterns.all;
+      holder.replaceChildren();
+      const windowChars = (block && block.window_chars) || DATA.thresholds.keyword_front_chars;
+      const rows = [
+        ["Median length", block.yours.median_chars, block.top_videos.median_chars, function (value) { return value == null ? "—" : Math.round(value) + " chars"; }],
+        ["Keyword in first " + windowChars + " characters", block.yours.pct_keyword_in_front, block.top_videos.pct_keyword_in_front, function (value) { return value == null ? "—" : Math.round(value * 100) + "%"; }],
+        ["Titles with a number", block.yours.pct_with_number, block.top_videos.pct_with_number, function (value) { return value == null ? "—" : Math.round(value * 100) + "%"; }],
+      ];
+      rows.forEach(function (spec) {
+        const wrap = el("div", null, "compare-row");
+        wrap.append(el("span", spec[0] + " · you " + block.yours.count + " titles, top videos " + block.top_videos.count));
+        const bars = el("div", null, "bars");
+        const max = Math.max(spec[1] || 0, spec[2] || 0, 0.001);
+        [["Yours", spec[1], "bar"], ["Top", spec[2], "bar top"]].forEach(function (barSpec) {
+          const line = el("div", null, "bar-line");
+          line.append(el("span", barSpec[0]));
+          const track = el("div", null, barSpec[2]);
+          const fill = document.createElement("i");
+          fill.style.width = Math.max(4, ((barSpec[1] || 0) / max) * 100) + "%";
+          track.append(fill);
+          const label = el("span", spec[3](barSpec[1]));
+          line.append(track);
+          bars.append(line);
+          line.append(label);
+        });
+        wrap.append(bars);
+        holder.append(wrap);
+      });
+    }
+
+    function renderRecs() {
+      const key = state.account === "all" ? "all" : state.account;
+      const cards = DATA.recommendations[key] || DATA.recommendations.all;
+      const holder = document.getElementById("recs");
+      holder.replaceChildren();
+      cards.forEach(function (card) {
+        const node = el("article", null, "rec");
+        node.append(el("h3", card.headline));
+        node.append(el("p", card.why));
+        const tryLine = el("p", "Try this: " + card.try_this);
+        tryLine.className = "try";
+        node.append(tryLine);
+        holder.append(node);
+      });
+      const privateNote = document.getElementById("private-metrics");
+      const accounts = DATA.accounts_over_time.filter(matchesAccount);
+      const withCtr = accounts.filter(function (row) { return row.analytics_ctr != null || row.analytics_avg_view_percentage != null; });
+      if (withCtr.length) {
+        const latest = withCtr.sort(function (a, b) { return a.collected_at < b.collected_at ? 1 : -1; })[0];
+        const bits = [];
+        if (latest.analytics_ctr != null) bits.push("thumbnail CTR " + latest.analytics_ctr + "%");
+        if (latest.analytics_avg_view_percentage != null) bits.push("average view percentage " + latest.analytics_avg_view_percentage + "%");
+        privateNote.textContent = "YouTube Analytics for " + latest.account_name + ": " + bits.join(", ") + ". These are private metrics from the optional OAuth connection.";
+      } else {
+        privateNote.textContent = "Thumbnail CTR and average view percentage stay blank until the optional YouTube Analytics secrets are added. Demo data does not invent them.";
+      }
+    }
+
+    function renderSources() {
+      const list = document.getElementById("sources");
+      list.replaceChildren();
+      DATA.sources.forEach(function (source) {
+        const account = source.account ? " (" + source.account + ")" : "";
+        list.append(el("li", source.state.toUpperCase() + " · " + source.source + account + " — " + source.detail));
+      });
+    }
+
+    function render() {
+      const posts = visiblePosts();
+      renderCards(posts);
+      renderFollowers();
+      renderPosts(posts);
+      renderKeywords();
+      renderRising();
+      renderExamples();
+      renderPatterns();
+      renderRecs();
+    }
+
+    fillBanner();
+    fillFilters();
+    renderSources();
+    render();
+    if (window.renderMineExtras) renderMineExtras();
+
+    function showView(name) {
+      document.getElementById("mine").hidden = name !== "mine";
+      document.getElementById("explore").hidden = name !== "explore";
+      document.querySelector(".steps").hidden = name !== "mine";
+      document.getElementById("view-mine").classList.toggle("on", name === "mine");
+      document.getElementById("view-explore").classList.toggle("on", name === "explore");
+      if (name === "explore" && window.renderExplorer) window.renderExplorer();
+      if (name === "mine" && window.Plotly) {
+        ["followers", "posts-chart", "keyword-chart", "competitor-chart"].forEach(function (id) {
+          const node = document.getElementById(id);
+          if (node && node.data) Plotly.Plots.resize(node);
+        });
+      }
+    }
+    document.getElementById("view-mine").addEventListener("click", function () { showView("mine"); });
+    document.getElementById("view-explore").addEventListener("click", function () { showView("explore"); });
+
+    document.getElementById("platform").addEventListener("change", function (event) {
+      state.platform = event.target.value;
+      rebuildAccounts();
+      render();
+    });
+    document.getElementById("account").addEventListener("change", function (event) {
+      state.account = event.target.value;
+      render();
+    });
+    document.getElementById("keyword").addEventListener("change", function (event) {
+      state.keyword = event.target.value;
+      render();
+    });
+    document.getElementById("from").addEventListener("change", function (event) {
+      state.from = event.target.value;
+      render();
+    });
+    document.getElementById("to").addEventListener("change", function (event) {
+      state.to = event.target.value;
+      render();
+    });
+    document.getElementById("metric").addEventListener("change", function (event) {
+      state.metric = event.target.value;
+      render();
+    });
+    document.getElementById("title-only").addEventListener("change", function (event) {
+      state.titleOnly = event.target.checked;
+      render();
+    });
+    document.getElementById("reset").addEventListener("click", function () {
+      state.platform = "all";
+      state.account = "all";
+      state.keyword = "all";
+      state.metric = "views";
+      state.titleOnly = false;
+      document.getElementById("platform").value = "all";
+      document.getElementById("keyword").value = "all";
+      document.getElementById("metric").value = "views";
+      document.getElementById("title-only").checked = false;
+      const from = document.getElementById("from");
+      const to = document.getElementById("to");
+      from.value = from.min;
+      to.value = to.max;
+      state.from = from.value;
+      state.to = to.value;
+      rebuildAccounts();
+      render();
+    });
+    document.getElementById("filters").addEventListener("submit", function (event) {
+      event.preventDefault();
+    });
+  </script>
+</body>
+</html>

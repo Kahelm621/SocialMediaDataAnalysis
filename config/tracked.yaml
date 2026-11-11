@@ -1,0 +1,157 @@
+# Accounts and keywords for the creator dashboard.
+# Edit this file, then run: python scripts/refresh.py
+# Hours in the "what to do better" section use this timezone.
+# Examples: UTC, America/New_York, America/Chicago, America/Los_Angeles
+timezone: UTC
+
+# How far back keyword search looks, and how many items to ask for.
+# Smaller numbers use less YouTube quota and less of the X rate limit.
+limits:
+  videos_per_account: 15
+  tweets_per_account: 20
+  tiktok_videos: 20
+  keyword_results: 8
+  trend_lookback_days: 30
+
+# Rules of thumb for the suggestion cards. Change them if you want
+# the page to be stricter or more relaxed.
+recommendations:
+  title_length_close_chars: 8
+  rising_pct: 15
+  falling_pct: -15
+  keyword_front_chars: 40
+  min_posts_for_hour: 4
+  min_posts_in_hour: 2
+  min_titles: 3
+
+accounts:
+  youtube:
+    # handle is the @name, without the @. It can differ from the display name.
+    # If a run says the channel was not found, paste the channel id instead
+    # (it starts with UC) and leave handle blank.
+    - name: KhaosAyngel
+      handle: KhaosAyngel
+      channel_id: ""
+      niche: gaming
+      keywords:
+        - guess the game
+        - gaming quiz
+        - steam
+        - balatro
+    - name: Strange Biology Club
+      # Display names with spaces are often not the @handle.
+      # Open the channel and copy the @handle if collection cannot find it.
+      handle: StrangeBiologyClub
+      channel_id: ""
+      niche: weird biology
+      keywords:
+        - weird biology
+  x:
+    - name: AyngelBytes
+      handle: AyngelBytes
+      niche: gaming
+      keywords:
+        - guess the game
+        - gaming quiz
+        - steam
+        - balatro
+  tiktok:
+    # Official TikTok APIs only read an account that has approved your app.
+    # Leave enabled: false until the account exists and the token is approved.
+    - name: TikTok
+      handle: ""
+      enabled: false
+      niche: gaming
+      keywords:
+        - guess the game
+        - gaming quiz
+        - steam
+        - balatro
+
+# Phrases to watch. hashtag is used for X (and TikTok Research, if approved).
+# If you omit hashtag, spaces are removed: "guess the game" -> guessthegame.
+# "balatro" is a stand-in game name. Swap in whatever you are playing.
+keywords:
+  - phrase: guess the game
+    hashtag: guessthegame
+  - phrase: gaming quiz
+    hashtag: gamingquiz
+  - phrase: steam
+    hashtag: steam
+  - phrase: weird biology
+    hashtag: weirdbiology
+  - phrase: balatro
+    hashtag: balatro
+
+# Other YouTube channels to watch. Leave enabled: false until you paste a real
+# @handle or a channel id (UC...). Each enabled channel costs about 3 units
+# per run (12 units per day on the 6-hour schedule).
+competitors:
+  youtube:
+    - name: Example gaming channel
+      handle: ""
+      channel_id: ""
+      niche: gaming
+      enabled: false
+    - name: Example science channel
+      handle: ""
+      channel_id: ""
+      niche: weird biology
+      enabled: false
+
+# Free YouTube Data API quota is 10,000 units per day.
+# search.list costs 100. videos.list, channels.list, and playlistItems.list cost 1.
+# The workflow runs every 6 hours (4 runs/day). Keyword search runs on the
+# first run of the day only, unless you pass --search.
+# The collector stops itself at daily_unit_budget so a long watchlist cannot
+# spend the whole free cap by accident.
+youtube_quota:
+  daily_unit_budget: 8000
+  runs_per_day: 4
+  keyword_search_every_n_runs: 4
+  outlier_channels_per_run: 8
+  trending_max_results: 15
+  strong_view_threshold: 100000
+  outlier_multiplier: 3
+
+# mostPopular chart. Category charts run only in category_region, because
+# every region × every category would multiply the cheap calls for little gain.
+# id "0" means the overall chart (no videoCategoryId).
+trending:
+  regions:
+    - US
+    - GB
+    - CA
+    - AU
+  category_region: US
+  categories:
+    - id: "0"
+      name: All categories
+    - id: "20"
+      name: Gaming
+    - id: "28"
+      name: Science & Technology
+    - id: "27"
+      name: Education
+    - id: "24"
+      name: Entertainment
+    - id: "23"
+      name: Comedy
+    - id: "26"
+      name: Howto & Style
+    - id: "10"
+      name: Music
+    - id: "22"
+      name: People & Blogs
+    - id: "17"
+      name: Sports
+    - id: "25"
+      name: News & Politics
+    - id: "15"
+      name: Pets & Animals
+    - id: "1"
+      name: Film & Animation
+    - id: "2"
+      name: Autos & Vehicles
+    - id: "19"
+      name: Travel & Events

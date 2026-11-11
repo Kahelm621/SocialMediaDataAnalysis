@@ -1,0 +1,24 @@
+name: Tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Run tests
+        run: pytest
+      - name: Build the dashboard from demo data
+        run: python scripts/build_dashboard.py --out "$RUNNER_TEMP/dashboard"
+      - name: Confirm the demo page was written
+        run: |
+          test -f "$RUNNER_TEMP/dashboard/index.html"
+          grep -q "DEMO DATA" "$RUNNER_TEMP/dashboard/index.html"
